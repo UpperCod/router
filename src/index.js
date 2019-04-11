@@ -1,136 +1,102 @@
 import {
-    h,
-    createContext,
-    useContext,
-    useEffect,
-    useState,
-    useMemo,
-    useRef
+	h,
+	useEffect,
+	useState,
+	createContext,
+	useContext,
+	toList
 } from "@atomico/core";
 
-import { match, join } from "./parse";
+import { match, resolve } from "./parse";
 
-let ContextProvider = createContext(),
-    emptyParams = {},
-    ContextRootPath = createContext("/");
+/**
+ * Vnode prepare
+ * @typedef {Object<string,any>} Props
+ *
+ * @typedef {(Function|String)} Type
+ *
+ * @typedef {{type:Type,props:Props}} Vnode
+ *
+ * redirects the browser
+ * @callback Redirect
+ * @param {string} pathname
+ * @return {void}
+ */
 
-export function createHistory(location = "/", server) {
-    let subscribers = [];
-    function redirect(path, pushHistory = true) {
-        this.location = path;
-        subscribers.forEach(handler => handler(path));
-        if (server) return;
-    }
+/**
+ * @namespace options
+ * @property {Function} pathname
+ */
+export let options = {
+	/**
+	 * @return {string} pathname
+	 */
+	pathname() {
+		return location.pathname;
+	},
+	/**
+	 * Dispatch history a new pathname
+	 * @type {Redirect}
+	 */
+	redirect(pathname) {
+		console.log(pathname, options.pathname());
+		if (pathname == options.pathname()) return;
+		history.pushState({}, "history", pathname);
+		window.dispatchEvent(new PopStateEvent("popstate"));
+	}
+};
 
-    function listener() {
-        if (server) return;
-        function handler() {
-            redirect(location.pathname, false);
-        }
-        window.addEventListener("popstate", handler);
-        return function unlistener() {
-            window.removeEventListener("popstate", handler);
-        };
-    }
-    function subscribe(handler) {
-        subscribers.push(handler);
-        return function unsubscribe() {
-            subscribers.splice(subscribers.indexOf(handler) >>> 0, 1);
-        };
-    }
-    return { redirect, listener, subscribe, location };
+/**@type {{Provider:Function,Consumer:Function}} */
+let Root = createContext("/");
+
+/**
+ * Crea una suscripcion al evento popstate del navegador
+ * @returns {[string,Redirect]}
+ */
+export function useHistory() {
+	let setState = useState()[1];
+
+	useEffect(() => {
+		window.addEventListener("popstate", setState);
+		return () => window.removeEventListener("popstate", setState);
+	}, []);
+	return [options.pathname(), options.redirect];
 }
 /**
- *@example useRoute("/folder");
+ * @type {Redirect}
+ * @return {Function}
  */
-export function useRoute(path) {
-    let history = useContext(ContextProvider),
-        rootPath = useContext(ContextRootPath),
-        [state, setLocation] = useState({ location: history.location });
-
-    useEffect(() => {
-        return history.subscribe(location => {
-            if (location !== state.location) {
-                state.location = location;
-                setLocation(state);
-            }
-        });
-    }, [history]);
-
-    return useMemo(() => match(join(rootPath, path), state.location), [
-        rootPath,
-        path,
-        state.location
-    ]);
-}
-
 export function useRedirect(pathname) {
-    let history = useContext(ContextProvider),
-        rootPath = useContext(ContextRootPath);
-
-    return () => {
-        history.redirect(join(rootPath, pathname));
-    };
+	return options.redirect;
 }
 
-export function Route({ path, children }) {
-    let [inRoute, params] = useRoute(path),
-        ref = useRef();
-    if (inRoute) {
-        let res;
-        if (ref.params !== params) {
-            res = ref.state = children[0](params);
-        } else {
-            res = ref.state;
-        }
-        ref.params = params;
-        return res;
-    }
-    return "";
+export function useRoute(path) {
+	let [pathname] = useHistory();
+	let rootPath = useContext(Root);
+	return [...match(resolve(rootPath, path), pathname), pathname];
 }
-
+/**
+ *
+ * @param {{children:Vnode[]}}
+ * @returns {Vnode}
+ */
 export function Router({ children }) {
-    let [inRoute, rootParams] = useRoute("/:any..."),
-        nextChild,
-        nextParams = emptyParams;
-    for (let i = 0; i < children.length; i++) {
-        let child = children[i],
-            props = child.props;
-        if (props.default) {
-            nextChild = child;
-            continue;
-        } else {
-            let [inRoute, params] = match(props.path, rootParams.any);
-            if (inRoute) {
-                nextChild = child;
-                nextParams = params;
-            }
-        }
-    }
-    if (nextChild) {
-        let props = { ...nextChild.props };
-        delete props.path;
-        delete props.default;
-        return h(
-            nextChild.tag,
-            { ...props, params: nextParams },
-            nextChild.children
-        );
-    }
-}
+	let [rootInRoute] = useRoute("/:pathname...");
+	let pathname = options.pathname();
+	let rootPath = useContext(Root);
 
-export function Provider({ location, children, path, server }) {
-    let [history] = useState(() => {
-        return createHistory(location, server);
-    });
+	if (!rootInRoute) return;
 
-    useEffect(() => history.listener(), []);
+	children = toList(children);
 
-    return (
-        <ContextProvider.Provider value={history}>
-            <ContextRootPath.Provider value={path || "/"}>
-                {children}
-            </ContextRootPath.Provider>
-        </ContextProvider.Provider>
-    );
+	for (let i = 0; i < children.length; i++) {
+		let { type, props } = children[i];
+		let { path, ...nextProps } = props;
+		let value = resolve(rootPath, path);
+		let [inRoute, params] = match(value, pathname);
+		if (inRoute) {
+			nextProps.params = params;
+			return h(Root.Provider, { value }, h(type, nextProps));
+		}
+	}
 }

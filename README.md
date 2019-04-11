@@ -1,6 +1,9 @@
 # @atomico/router
 
-pequeño controlador de rutas
+[![npm](https://badgen.net/npm/v/@atomico/router)](http://npmjs.com/@atomico/router)
+[![gzip](https://badgen.net/bundlephobia/minzip/@atomico/router)](https://bundlephobia.com/result?p=@atomico/router)
+
+small route controller
 
 ```jsx
 import { h, render } from "@atomico/core";
@@ -18,7 +21,7 @@ render(
 
 ## useRoute
 
-permite escuchar el estado de una ruta especifica.
+allows you to hear the status of a specific route.
 
 ```jsx
 import { useRoute } from "@atomico/router";
@@ -35,7 +38,7 @@ function Component() {
 
 ## useRedirect
 
-returns a redirect callback
+retorna un callback de redirección
 
 ```jsx
 import { useRedirect } from "@atomico/router";
@@ -49,7 +52,7 @@ function Component() {
 
 ## Router
 
-select from the children the route that matches the pattern.
+selecciona de los hijos la ruta que concuerda con el patrón.
 
 ```jsx
 import { h, render } from "@atomico/core";
@@ -64,3 +67,8 @@ render(
 	</Router>
 );
 ```
+
+# Todo
+
+- [ ] Basic test
+- [ ] Add examples
