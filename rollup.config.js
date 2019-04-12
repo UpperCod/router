@@ -13,7 +13,7 @@ export default {
 			format: "cjs"
 		},
 		{
-			file: pkg["umd:main"],
+			file: pkg.unpkg,
 			sourcemap: true,
 			format: "umd",
 			name: pkg.name,
@@ -22,7 +22,7 @@ export default {
 			}
 		},
 		{
-			file: pkg["module"],
+			file: pkg.module,
 			sourcemap: true,
 			format: "es"
 		}

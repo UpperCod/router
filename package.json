@@ -4,7 +4,7 @@
 	"version": "0.0.0",
 	"main": "dist/atomico-router.js",
 	"module": "dist/atomico-router.mjs",
-	"umd:main": "dist/atomico-router.umd.js",
+	"unpkg": "dist/atomico-router.umd.js",
 	"source": "src/index.js",
 	"author": "Matias Trujillo Olivares",
 	"license": "ISC",

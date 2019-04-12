@@ -39,7 +39,6 @@ export let options = {
 	 * @type {Redirect}
 	 */
 	redirect(pathname) {
-		console.log(pathname, options.pathname());
 		if (pathname == options.pathname()) return;
 		history.pushState({}, "history", pathname);
 		window.dispatchEvent(new PopStateEvent("popstate"));
