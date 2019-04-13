@@ -42,6 +42,9 @@ export let options = {
 		if (pathname == options.pathname()) return;
 		history.pushState({}, "history", pathname);
 		window.dispatchEvent(new PopStateEvent("popstate"));
+	},
+	setRootDefault(path) {
+		RootPath.defaultValue = path;
 	}
 };
 
