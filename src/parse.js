@@ -7,37 +7,37 @@ let PARAMS_EMPTY = {};
 let MEMO = {};
 
 export function format(path) {
-	return path.replace(/([^\/])+\/$/, "$1");
+	return path.replace(/(\/){2,}/g, "/").replace(/([^\/]+)\/$/, "$1");
 }
 
 export function parse(string) {
-	let folders = string.match(FOLDERS) || [""],
-		params = [],
-		regexp = new RegExp(
-			"^" +
-				folders
-					.map(folder => {
-						let [string, param, field, type] = folder.match(PARAM) || [];
-						if (param) {
-							params.push(field);
-							if (type === "...") {
-								return `(.*)`;
-							} else if (type === "?") {
-								return `${SPLIT}(${FOLDER}*)`;
-							} else {
-								return `\\/(${FOLDER}+)`;
-							}
+	let folders = string.match(FOLDERS) || [""];
+	let params = [];
+	let regexp = new RegExp(
+		"^" +
+			folders
+				.map(folder => {
+					let [string, param, field, type] = folder.match(PARAM) || [];
+					if (param) {
+						params.push(field);
+						if (type === "...") {
+							return `(.*)`;
+						} else if (type === "?") {
+							return `${SPLIT}(${FOLDER}*)`;
 						} else {
-							return `\\/(?:${folder
-								.replace(/\./g, "\\.")
-								.replace(/\*/g, FOLDER + "+")
-								.replace(/\((?!\?\:)/g, "(?:")})`;
+							return `\\/(${FOLDER}+)`;
 						}
-					})
-					.join("") +
-				"$",
-			"i"
-		);
+					} else {
+						return `\\/(?:${folder
+							.replace(/(\.|\-)/g, "\\$1")
+							.replace(/\*/g, FOLDER + "+")
+							.replace(/\((?!\?\:)/g, "(?:")})`;
+					}
+				})
+				.join("") +
+			"$",
+		"i"
+	);
 
 	return { regexp, params, logs: {} };
 }
@@ -83,5 +83,7 @@ export function relative(string) {
  * @param {*} b
  */
 export function resolve(a = "", b = "") {
-	return a.replace(/\/(:[\w]+...){0,1}$/, "") + "/" + b.replace(/^\//, "");
+	return format(
+		a.replace(/\/(:[\w]+...){0,1}$/, "") + "/" + b.replace(/^\//, "")
+	);
 }
