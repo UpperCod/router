@@ -1,7 +1,7 @@
 {
 	"name": "@atomico/router",
 	"description": "small modular state manager",
-	"version": "0.0.1",
+	"version": "0.1.0",
 	"main": "dist/atomico-router.js",
 	"module": "dist/atomico-router.mjs",
 	"unpkg": "dist/atomico-router.umd.js",
