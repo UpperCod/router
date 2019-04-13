@@ -68,6 +68,19 @@ render(
 );
 ```
 
+## Root
+
+allows defining a default root for nested components.
+
+```jsx
+<Root path="/dev">
+	<Router>
+		<Home path="/" />
+		<Contact path="/contact" />
+	</Router>
+</Root>
+```
+
 # Todo
 
 - [ ] Basic test
