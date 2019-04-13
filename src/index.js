@@ -46,33 +46,52 @@ export let options = {
 };
 
 /**@type {{Provider:Function,Consumer:Function}} */
-let Root = createContext("/");
+let ParentPath = createContext("/");
 
+let RootPath = createContext("");
 /**
  * Crea una suscripcion al evento popstate del navegador
  * @returns {[string,Redirect]}
  */
 export function useHistory() {
-	let setState = useState()[1];
+	let pathname = options.pathname();
+	let [state, setState] = useState({ pathname });
 
 	useEffect(() => {
-		window.addEventListener("popstate", setState);
-		return () => window.removeEventListener("popstate", setState);
+		function handler() {
+			let pathname = options.pathname();
+			if (state.pathname != pathname) {
+				state.pathname = pathname;
+				setState(state);
+			}
+		}
+		window.addEventListener("popstate", handler);
+		return () => window.removeEventListener("popstate", handler);
 	}, []);
 	return [options.pathname(), options.redirect];
+}
+
+export function useParentPath() {
+	let parentPath = useContext(ParentPath);
+	let rootPath = useContext(RootPath);
+	return resolve(rootPath, parentPath);
 }
 /**
  * @type {Redirect}
  * @return {Function}
  */
-export function useRedirect(pathname) {
-	return options.redirect;
+export function useRedirect() {
+	let rootPath = useContext(RootPath);
+	return path => {
+		options.redirect(resolve(rootPath, path));
+	};
 }
 
 export function useRoute(path) {
 	let [pathname] = useHistory();
-	let rootPath = useContext(Root);
-	return [...match(resolve(rootPath, path), pathname), pathname];
+	let parentPath = useParentPath();
+
+	return [...match(resolve(parentPath, path), pathname), pathname];
 }
 /**
  *
@@ -80,22 +99,26 @@ export function useRoute(path) {
  * @returns {Vnode}
  */
 export function Router({ children }) {
-	let [rootInRoute] = useRoute("/:pathname...");
+	let [inRoute] = useRoute("/:pathname...");
 	let pathname = options.pathname();
-	let rootPath = useContext(Root);
+	let parentPath = useParentPath();
 
-	if (!rootInRoute) return;
+	if (!inRoute) return;
 
 	children = toList(children);
 
 	for (let i = 0; i < children.length; i++) {
 		let { type, props } = children[i];
 		let { path, ...nextProps } = props;
-		let value = resolve(rootPath, path);
+		let value = resolve(parentPath, path);
 		let [inRoute, params] = match(value, pathname);
 		if (inRoute) {
 			nextProps.params = params;
-			return h(Root.Provider, { value }, h(type, nextProps));
+			return h(ParentPath.Provider, { value }, h(type, nextProps));
 		}
 	}
+}
+
+export function Root({ children, path }) {
+	return h(RootPath.Provider, { value: path }, children);
 }
