@@ -6,6 +6,10 @@ let PARAM = /(:)(\w+)(\?|(\.){3}){0,1}/;
 let PARAMS_EMPTY = {};
 let MEMO = {};
 
+export function format(path) {
+	return path.replace(/([^\/])+\/$/, "$1");
+}
+
 export function parse(string) {
 	let folders = string.match(FOLDERS) || [""],
 		params = [],
@@ -44,6 +48,8 @@ export function parse(string) {
  * @return {array} - [ inRoute:boolean, params:object ];
  */
 export function match(path, value) {
+	path = format(path);
+	value = format(value);
 	if (!MEMO[path]) {
 		MEMO[path] = parse(path);
 	}
